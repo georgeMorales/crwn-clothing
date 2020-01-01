@@ -1,47 +1,62 @@
 import React from 'react';
 import { Switch, Route } from 'react-router-dom';
-import HomePage from './pages/homepage/homepage.component';
-import ShopPage from './pages/shop/shop.component';
+
 import './App.css';
 
+import HomePage from './pages/homepage/homepage.component';
+import ShopPage from './pages/shop/shop.component';
+import SignInAndSignUpPage from './pages/sign-in-and-sign-up/sign-in-and-sign-up.component';
+import Header from './components/header/header.component';
+import { auth, createUserProfileDocument } from './firebase/firebase.utils';
 
-// const HatsPage = (props) => {
-//     console.log(props)
-//     return (
-//         <div>
-//             <h1>HATS PAGE</h1>
-//         </div>
-//     )
-// }
+class App extends React.Component {
+  constructor() {
+    super();
 
-// const TopicsList = () => {
-//     return (
-//         <div>
-//             <h1>TOPICS LIST PAGE</h1>
-//         </div>
-//     )
-// }
+    this.state = {
+      currentUser: null
+    };
+  }
 
-// const TopicDetail = (props) => {
-//     console.log(props)
-//     return (
-//         <div>
-//             <h1>TOPICS DETAIL PAGE: {props.match.params.topicId}</h1>
-//         </div>
-//     )
-// }
+  unsubscribeFromAuth = null;
 
-function App() {
+  componentDidMount() {
+    this.unsubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+      if (userAuth) {
+        const userRef = await createUserProfileDocument(userAuth);
+
+        userRef.onSnapshot(snapShot => {
+          this.setState({
+            currentUser: {
+              id: snapShot.id,
+              ...snapShot.data()
+            }
+          });
+
+          console.log(this.state);
+        });
+      }
+
+      this.setState({ currentUser: userAuth });
+    });
+  }
+
+  componentWillUnmount() {
+    this.unsubscribeFromAuth();
+  }
+
+  render() {
     return (
-        <div>
-            <Switch>
-                <Route exact path='/' component={HomePage} />
-                {/* <Route path='/hats' component={HatsPage} /> */}
-                <Route path='/shop' component={ShopPage} />
-                
-            </Switch>
-        </div>
+      <div>
+        <Header currentUser={this.state.currentUser} />
+        <Switch>
+          <Route exact path='/' component={HomePage} />
+          <Route path='/shop' component={ShopPage} />
+          <Route path='/signin' component={SignInAndSignUpPage} />
+        </Switch>
+      </div>
     );
+  }
 }
 
 export default App;
